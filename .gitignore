@@ -1,0 +1,7 @@
+
+*.mk
+*.obj
+*.d
+*.out
+*.map
+*.xml
