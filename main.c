@@ -1,6 +1,6 @@
-/* Title: SASB Single Axis FLoator Test Code
+/* Title: SLFBM LSFESS Test Code
  * Author: Tyler Larson
- * Purpose: Through use of a PID controller a current sensor and a displacement sensor, the code controls both axis of the top bearings of the flywheel.
+ * Purpose: This code is intended to run the bottom half of the low speed flywheel
  */
 
 /*
@@ -12,6 +12,9 @@
 /*
  * Defines
  */
+
+//Sets the number of coils that the machine has
+#define coil_count 24 //There are 24 coils in the FRRM that we are controling
 
 //Sets the size of the array for the Integral and Derivative previous values
 #define prev_size   64  //Size of the Memory array in the PID control
@@ -126,6 +129,7 @@ position X1;    //Variable used to store the PID math variables for the x axis d
 position Y1;    //Variable used to store the PID math variables for the y axis displacement sensor
 
 //Definition of the current coil structure
+current Coils[coil_count];  //Define all the coils at once
 current C1;     //Variable used to store the current control variables for coil 1
 current C2;     //Variable used to store the current control variables for coil 2
 current C3;     //Variable used to store the current control variables for coil 3
