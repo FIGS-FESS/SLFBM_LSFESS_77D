@@ -48,18 +48,59 @@
 #define ki_init 0  //Default to 0 for initial tuning
 #define kd_init 0  //Default to 0 for initial tuning
 
+/*
+ * Enumerations for Readability
+ */
+
+//Gpio Register Enumerations
+typedef enum Gpio_Regs{
+    Gpio_A,
+    Gpio_B,
+    Gpio_C,
+    Gpio_D,
+    Gpio_E,
+    Gpio_F
+}Gpio_Regs;
+
 //State Transition States Enumeration
-typedef enum SPI_state {Idle_state,
-                        Sampling_state,
-                        Start_state,
-                        Null_state,
-                        Data_state,
-                        Error_state,
-                        Warning_state,
-                        CRC_state,
-                        Ignore_state
+typedef enum SPI_state {
+    Idle_state,
+    Sampling_state,
+    Start_state,
+    Null_state,
+    Data_state,
+    Error_state,
+    Warning_state,
+    CRC_state,
+    Ignore_state
 }SPI_state;
 
+enum coil_num{
+    C1,
+    C2,
+    C3,
+    C4,
+    C5,
+    C6,
+    C7,
+    C8,
+    C9,
+    C10,
+    C11,
+    C12,
+    C13,
+    C14,
+    C15,
+    C16,
+    C17,
+    C18,
+    C19,
+    C20,
+    C21,
+    C22,
+    C23,
+    C24
+}
 
 /*
  * Structures
@@ -98,6 +139,9 @@ typedef struct current_coil_struct{
     float y_influence;      /*!< Y-axis influence of the coil */
     float bias;             /*!< Individual bias current of the coil **May use in Gauss/De-Gauss process in the future */
     int gpio_offset;        /*!< Offset in the register to the correct GPIO pin */
+    int gpio_pwm_h;         /*!< Gpio value for the PWM_H pin */
+    int gpio_pwm_l;         /*!< Gpio value for the PWM_L pin */
+    int gpio_dir;           /*!< Gpio value for the Dir pin */
 }current;
 
 /*
@@ -130,31 +174,6 @@ position Y1;    //Variable used to store the PID math variables for the y axis d
 
 //Definition of the current coil structure
 current Coils[coil_count];  //Define all the coils at once
-current C1;     //Variable used to store the current control variables for coil 1
-current C2;     //Variable used to store the current control variables for coil 2
-current C3;     //Variable used to store the current control variables for coil 3
-current C4;     //Variable used to store the current control variables for coil 4
-current C5;     //Variable used to store the current control variables for coil 5
-current C6;     //Variable used to store the current control variables for coil 6
-current C7;     //Variable used to store the current control variables for coil 7
-current C8;     //Variable used to store the current control variables for coil 8
-current C9;     //Variable used to store the current control variables for coil 9
-current C10;    //Variable used to store the current control variables for coil 10
-current C11;    //Variable used to store the current control variables for coil 11
-current C12;    //Variable used to store the current control variables for coil 12
-current C13;    //Variable used to store the current control variables for coil 13
-current C14;    //Variable used to store the current control variables for coil 14
-current C15;    //Variable used to store the current control variables for coil 15
-current C16;    //Variable used to store the current control variables for coil 16
-current C17;    //Variable used to store the current control variables for coil 17
-current C18;    //Variable used to store the current control variables for coil 18
-current C19;    //Variable used to store the current control variables for coil 19
-current C20;    //Variable used to store the current control variables for coil 20
-current C21;    //Variable used to store the current control variables for coil 21
-current C22;    //Variable used to store the current control variables for coil 22
-current C23;    //Variable used to store the current control variables for coil 23
-current C24;    //Variable used to store the current control variables for coil 24
-
 
 //Displacement sensor reading
 int x1_sample;  //Global for x1 displacement sensor reading *(Digitized)
@@ -175,31 +194,7 @@ int x1_update;  //Flag for new displacement sensor readings
 float disp_to_current = 2.2;  //Scales the PID output to current *(Meters/Amp)
 
 //Current sensors readings
-int c1_sample;  //Global for coil 1 current sensor reading *(Digitized)
-int c2_sample;  //Global for coil 2 current sensor reading *(Digitized)
-int c3_sample;  //Global for coil 3 current sensor reading *(Digitized)
-int c4_sample;  //Global for coil 4 current sensor reading *(Digitized)
-int c5_sample;  //Global for coil 5 current sensor reading *(Digitized)
-int c6_sample;  //Global for coil 6 current sensor reading *(Digitized)
-int c7_sample;  //Global for coil 7 current sensor reading *(Digitized)
-int c8_sample;  //Global for coil 8 current sensor reading *(Digitized)
-int c9_sample;  //Global for coil 9 current sensor reading *(Digitized)
-int c10_sample; //Global for coil 10 current sensor reading *(Digitized)
-int c11_sample; //Global for coil 11 current sensor reading *(Digitized)
-int c12_sample; //Global for coil 12 current sensor reading *(Digitized)
-int c13_sample; //Global for coil 13 current sensor reading *(Digitized)
-int c14_sample; //Global for coil 14 current sensor reading *(Digitized)
-int c15_sample; //Global for coil 15 current sensor reading *(Digitized)
-int c16_sample; //Global for coil 16 current sensor reading *(Digitized)
-int c17_sample; //Global for coil 17 current sensor reading *(Digitized)
-int c18_sample; //Global for coil 18 current sensor reading *(Digitized)
-int c19_sample; //Global for coil 19 current sensor reading *(Digitized)
-int c20_sample; //Global for coil 20 current sensor reading *(Digitized)
-int c21_sample; //Global for coil 21 current sensor reading *(Digitized)
-int c22_sample; //Global for coil 22 current sensor reading *(Digitized)
-int c23_sample; //Global for coil 23 current sensor reading *(Digitized)
-int c24_sample; //Global for coil 24 current sensor reading *(Digitized)
-
+int c_samples[coil_count];
 
 //Current sensor update flag
 int ADCA_update;  //Flag for new current sensor readings
@@ -226,6 +221,7 @@ SPI_state c_state = Idle_state; //Variable for the current state
 SPI_state n_state = Idle_state;  //Variable for the next state
 
 //SPI Storage Variables
+    /*Someday make this a struct */
 uint32_t CRC_check;
 float Data_value;
 bool Error_flag = 0;
@@ -268,94 +264,13 @@ void main(void){
     GpioCtrlRegs.GPBDIR.all = (uint32_t)0x7 << 16;    //GPIO 48,49 and 50
     GpioDataRegs.GPACLEAR.all = (uint32_t)0x7 << 16;
 
-    /*
-     *PWM_H Pins
-     */
+    //Sets the PWM_H, PWM_L and Dir GPIO values
+        /* This is where one would go to see/change the pinouts on the board */
+    Coil_Pin_Assignments(&Coils);
 
-    //Board #2
-        //Pin 145, PWM_H for C13
-    GpioCtrlRegs.GPCDIR.bit.GPIO78 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO78 = 1;   //Sets the pin low
-        //Pin 143, PWM_H for C14
-    GpioCtrlRegs.GPCDIR.bit.GPIO76 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO76 = 1;   //Sets the pin to low
-        //Pin 141, PWM_H for C15
-    GpioCtrlRegs.GPCDIR.bit.GPIO74 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO74 = 1;   //Sets the pin to low
-        //Pin 139, PWM_H for C16
-    GpioCtrlRegs.GPCDIR.bit.GPIO72 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO72 = 1;   //Sets the pin to low
+    //Enables and sets to low PWM_H, PWM_L and Dir for each coil
+    Coil_Gpio_Init(&Coils);
 
-    //Board #3
-        //Pin 137, PWM_H for C17
-    GpioCtrlRegs.GPCDIR.bit.GPIO70 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO70 = 1;   //Sets the pin low
-        //Pin 133, PWM_H for C18
-    GpioCtrlRegs.GPCDIR.bit.GPIO68 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO68 = 1;   //Sets the pin to low
-        //Pin 131, PWM_H for C19
-    GpioCtrlRegs.GPCDIR.bit.GPIO66 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;   //Sets the pin to low
-        //Pin 129, PWM_H for C20
-    GpioCtrlRegs.GPCDIR.bit.GPIO64 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO64 = 1;   //Sets the pin to low
-
-    //Board #4
-        //Pin 86, PWM_H for C9
-    GpioCtrlRegs.GPBDIR.bit.GPIO34 = 1;     //Sets the pin to output
-    GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;   //Sets the pin low
-        //Pin 88, PWM_H for C10
-    GpioCtrlRegs.GPBDIR.bit.GPIO39 = 1;     //Sets the pin to output
-    GpioDataRegs.GPBCLEAR.bit.GPIO39 = 1;   //Sets the pin to low
-        //Pin 90, PWM_H for C11
-    GpioCtrlRegs.GPBDIR.bit.GPIO44 = 1;     //Sets the pin to output
-    GpioDataRegs.GPBCLEAR.bit.GPIO44 = 1;   //Sets the pin to low
-        //Pin 92, PWM_H for C12
-    GpioCtrlRegs.GPBDIR.bit.GPIO45 = 1;     //Sets the pin to output
-    GpioDataRegs.GPBCLEAR.bit.GPIO45 = 1;   //Sets the pin to low
-
-    //Board #5
-        //Pin 130, PWM_H for C1
-    GpioCtrlRegs.GPCDIR.bit.GPIO65 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO65 = 1;   //Sets the pin low
-        //Pin 132, PWM_H for C2
-    GpioCtrlRegs.GPCDIR.bit.GPIO67 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO67 = 1;   //Sets the pin to low
-        //Pin 134, PWM_H for C3
-    GpioCtrlRegs.GPCDIR.bit.GPIO69 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO69 = 1;   //Sets the pin to low
-        //Pin 138, PWM_H for C4
-    GpioCtrlRegs.GPCDIR.bit.GPIO71 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO71 = 1;   //Sets the pin to low
-
-    //Board #6
-        //Pin 140, PWM_H for C21
-    GpioCtrlRegs.GPCDIR.bit.GPIO73 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO73 = 1;   //Sets the pin low
-        //Pin 142, PWM_H for C22
-    GpioCtrlRegs.GPCDIR.bit.GPIO75 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO75 = 1;   //Sets the pin to low
-        //Pin 144, PWM_H for C23
-    GpioCtrlRegs.GPCDIR.bit.GPIO77 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO77 = 1;   //Sets the pin to low
-        //Pin 146, PWM_H for C24
-    GpioCtrlRegs.GPCDIR.bit.GPIO79 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO79 = 1;   //Sets the pin to low
-
-    //Board #7
-        //Pin 148, PWM_H for C5
-    GpioCtrlRegs.GPCDIR.bit.GPIO81 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO81 = 1;   //Sets the pin low
-        //Pin 150, PWM_H for C6
-    GpioCtrlRegs.GPCDIR.bit.GPIO83 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO83 = 1;   //Sets the pin to low
-        //Pin 152, PWM_H for C7
-    GpioCtrlRegs.GPCDIR.bit.GPIO85 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO85 = 1;   //Sets the pin to low
-        //Pin 154, PWM_H for C8
-    GpioCtrlRegs.GPCDIR.bit.GPIO87 = 1;     //Sets the pin to output
-    GpioDataRegs.GPCCLEAR.bit.GPIO87 = 1;   //Sets the pin to low
-    
     EDIS;
 
     //Enable output of ePWM signals to Pins
@@ -385,58 +300,14 @@ void main(void){
     // Y2.scale = 0.000807102502;
     // Y2.offset = 0;
 
-    //Setup C1 variable
-    SetupCoil(&C1);
-    SetupCoil(&C2);
-    SetupCoil(&C3);
-    SetupCoil(&C4);
-    SetupCoil(&C5);
-    SetupCoil(&C6);
-    SetupCoil(&C7);
-    SetupCoil(&C8);
-    SetupCoil(&C9);
-    SetupCoil(&C10);
-    SetupCoil(&C11);
-    SetupCoil(&C12);
-    SetupCoil(&C13);
-    SetupCoil(&C14);
-    SetupCoil(&C15);
-    SetupCoil(&C16);
-    SetupCoil(&C17);
-    SetupCoil(&C18);
-    SetupCoil(&C19);
-    SetupCoil(&C20);
-    SetupCoil(&C21);
-    SetupCoil(&C22);
-    SetupCoil(&C23);
-    SetupCoil(&C24);
-    
-    //Sets the location of the global for each sample
-    C1.sample_loc = &c1_sample;
-    C2.sample_loc = &c2_sample;
-    C3.sample_loc = &c3_sample;
-    C4.sample_loc = &c4_sample;
-    C5.sample_loc = &c5_sample;
-    C6.sample_loc = &c6_sample;
-    C7.sample_loc = &c7_sample;
-    C8.sample_loc = &c8_sample;
-    C9.sample_loc = &c9_sample;
-    C10.sample_loc = &c10_sample;
-    C11.sample_loc = &c11_sample;
-    C12.sample_loc = &c12_sample;
-    C13.sample_loc = &c13_sample;
-    C14.sample_loc = &c14_sample;
-    C15.sample_loc = &c15_sample;
-    C16.sample_loc = &c16_sample;
-    C17.sample_loc = &c17_sample;
-    C18.sample_loc = &c18_sample;
-    C19.sample_loc = &c19_sample;
-    C20.sample_loc = &c20_sample;
-    C21.sample_loc = &c21_sample;
-    C22.sample_loc = &c22_sample;
-    C23.sample_loc = &c23_sample;
-    C24.sample_loc = &c24_sample;
-    
+    //Setup Coils
+    for (i = 0; i < coil_count; ++i)
+    {
+        SetupCoil(&Coils[i]);
+        //Sets the location of the global for each sample
+        Coils[i].sample_loc = &c_samples[i];
+    }
+
     //Displacement sensor influences for each coil
         //Board #5
     C1.x_influence = 0;
@@ -496,46 +367,7 @@ void main(void){
     C23.x_influence = 0;
     C23.y_influence = 0;
     C24.x_influence = 0;
-    C24.y_influence = 0;
-
-    //GPIO offsets
-        //These are found by mapping between the physical pins and their GPIO address in the GPIO registers
-        //Board #2
-    C13.gpio_offset = 8;
-    C14.gpio_offset = 10;
-    C15.gpio_offset = 12;
-    C16.gpio_offset = 14;
-
-        //Board #3
-    C17.gpio_offset = 0;
-    C18.gpio_offset = 2;
-    C19.gpio_offset = 4;
-    C20.gpio_offset = 6;
-
-        //Board #4
-    C9.gpio_offset = 2;
-    C10.gpio_offset = 7;
-    C11.gpio_offset = 12;
-    C12.gpio_offset = 13;
-
-        //Board #5
-    C1.gpio_offset = 1;
-    C2.gpio_offset = 3;
-    C3.gpio_offset = 5;
-    C4.gpio_offset = 7;
-
-        //Board #6
-    C21.gpio_offset = 9;
-    C22.gpio_offset = 11;
-    C23.gpio_offset = 13;
-    C24.gpio_offset = 15;
-
-        //Board #7
-    C5.gpio_offset = 17;
-    C6.gpio_offset = 19;
-    C7.gpio_offset = 21;
-    C8.gpio_offset = 23;
-    
+    C24.y_influence = 0;    
 
     //Disable interrupts? Followed the example of process from the control suite example code
     DINT;
@@ -674,6 +506,181 @@ void main(void){
                 ydelta = ymax - ymin;
             }
         }
+    }
+}
+
+/*
+ * Function to assing the PWM_H, PWM_L and Dir GPIO values
+ */
+
+void Coil_Pin_Assignments(current *Coils){
+    Coils[C1].gpio_pwm_h = ;    //C1 PWM_H, GPIO , Pin
+    Coils[C1].gpio_pwm_l = ;    //C1 PWM_L, GPIO , Pin
+    Coils[C1].gpio_dir = ;      //C1 Dir, GPIO , Pin
+    Coils[C2].gpio_pwm_h = ;    //C2 PWM_H, GPIO , Pin
+    Coils[C2].gpio_pwm_l = ;    //C2 PWM_L, GPIO , Pin
+    Coils[C2].gpio_dir = ;      //C2 Dir, GPIO , Pin
+    Coils[C3].gpio_pwm_h = ;    //C3 PWM_H, GPIO , Pin
+    Coils[C3].gpio_pwm_l = ;    //C3 PWM_L, GPIO , Pin
+    Coils[C3].gpio_dir = ;      //C3 Dir, GPIO , Pin
+    Coils[C4].gpio_pwm_h = ;    //C4 PWM_H, GPIO , Pin
+    Coils[C4].gpio_pwm_l = ;    //C4 PWM_L, GPIO , Pin
+    Coils[C4].gpio_dir = ;      //C4 Dir, GPIO , Pin
+    Coils[C5].gpio_pwm_h = ;    //C5 PWM_H, GPIO , Pin
+    Coils[C5].gpio_pwm_l = ;    //C5 PWM_L, GPIO , Pin
+    Coils[C5].gpio_dir = ;      //C5 Dir, GPIO , Pin
+    Coils[C6].gpio_pwm_h = ;    //C6 PWM_H, GPIO , Pin
+    Coils[C6].gpio_pwm_l = ;    //C6 PWM_L, GPIO , Pin
+    Coils[C6].gpio_dir = ;      //C6 Dir, GPIO , Pin
+    Coils[C7].gpio_pwm_h = ;    //C7 PWM_H, GPIO , Pin
+    Coils[C7].gpio_pwm_l = ;    //C7 PWM_L, GPIO , Pin
+    Coils[C7].gpio_dir = ;      //C7 Dir, GPIO , Pin
+    Coils[C8].gpio_pwm_h = ;    //C8 PWM_H, GPIO , Pin
+    Coils[C8].gpio_pwm_l = ;    //C8 PWM_L, GPIO , Pin
+    Coils[C8].gpio_dir = ;      //C8 Dir, GPIO , Pin
+    Coils[C9].gpio_pwm_h = ;    //C9 PWM_H, GPIO , Pin
+    Coils[C9].gpio_pwm_l = ;    //C9 PWM_L, GPIO , Pin
+    Coils[C9].gpio_dir = ;      //C9 Dir, GPIO , Pin
+    Coils[C10].gpio_pwm_h = ;    //C10 PWM_H, GPIO , Pin
+    Coils[C10].gpio_pwm_l = ;    //C10 PWM_L, GPIO , Pin
+    Coils[C10].gpio_dir = ;      //C10 Dir, GPIO , Pin
+    Coils[C11].gpio_pwm_h = ;    //C11 PWM_H, GPIO , Pin
+    Coils[C11].gpio_pwm_l = ;    //C11 PWM_L, GPIO , Pin
+    Coils[C11].gpio_dir = ;      //C11 Dir, GPIO , Pin
+    Coils[C12].gpio_pwm_h = ;    //C12 PWM_H, GPIO , Pin
+    Coils[C12].gpio_pwm_l = ;    //C12 PWM_L, GPIO , Pin
+    Coils[C12].gpio_dir = ;      //C12 Dir, GPIO , Pin
+    Coils[C13].gpio_pwm_h = ;    //C13 PWM_H, GPIO , Pin
+    Coils[C13].gpio_pwm_l = ;    //C13 PWM_L, GPIO , Pin
+    Coils[C13].gpio_dir = ;      //C13 Dir, GPIO , Pin
+    Coils[C14].gpio_pwm_h = ;    //C14 PWM_H, GPIO , Pin
+    Coils[C14].gpio_pwm_l = ;    //C14 PWM_L, GPIO , Pin
+    Coils[C14].gpio_dir = ;      //C14 Dir, GPIO , Pin
+    Coils[C15].gpio_pwm_h = ;    //C15 PWM_H, GPIO , Pin
+    Coils[C15].gpio_pwm_l = ;    //C15 PWM_L, GPIO , Pin
+    Coils[C15].gpio_dir = ;      //C15 Dir, GPIO , Pin
+    Coils[C16].gpio_pwm_h = ;    //C16 PWM_H, GPIO , Pin
+    Coils[C16].gpio_pwm_l = ;    //C16 PWM_L, GPIO , Pin
+    Coils[C16].gpio_dir = ;      //C16 Dir, GPIO , Pin
+    Coils[C17].gpio_pwm_h = ;    //C17 PWM_H, GPIO , Pin
+    Coils[C17].gpio_pwm_l = ;    //C17 PWM_L, GPIO , Pin
+    Coils[C17].gpio_dir = ;      //C17 Dir, GPIO , Pin
+    Coils[C18].gpio_pwm_h = ;    //C18 PWM_H, GPIO , Pin
+    Coils[C18].gpio_pwm_l = ;    //C18 PWM_L, GPIO , Pin
+    Coils[C18].gpio_dir = ;      //C18 Dir, GPIO , Pin
+    Coils[C19].gpio_pwm_h = ;    //C19 PWM_H, GPIO , Pin
+    Coils[C19].gpio_pwm_l = ;    //C19 PWM_L, GPIO , Pin
+    Coils[C19].gpio_dir = ;      //C19 Dir, GPIO , Pin
+    Coils[C20].gpio_pwm_h = ;    //C20 PWM_H, GPIO , Pin
+    Coils[C20].gpio_pwm_l = ;    //C20 PWM_L, GPIO , Pin
+    Coils[C20].gpio_dir = ;      //C20 Dir, GPIO , Pin
+    Coils[C21].gpio_pwm_h = ;    //C21 PWM_H, GPIO , Pin
+    Coils[C21].gpio_pwm_l = ;    //C21 PWM_L, GPIO , Pin
+    Coils[C21].gpio_dir = ;      //C21 Dir, GPIO , Pin
+    Coils[C22].gpio_pwm_h = ;    //C22 PWM_H, GPIO , Pin
+    Coils[C22].gpio_pwm_l = ;    //C22 PWM_L, GPIO , Pin
+    Coils[C22].gpio_dir = ;      //C22 Dir, GPIO , Pin
+    Coils[C23].gpio_pwm_h = ;    //C23 PWM_H, GPIO , Pin
+    Coils[C23].gpio_pwm_l = ;    //C23 PWM_L, GPIO , Pin
+    Coils[C23].gpio_dir = ;      //C23 Dir, GPIO , Pin
+    Coils[C24].gpio_pwm_h = ;    //C24 PWM_H, GPIO , Pin
+    Coils[C24].gpio_pwm_l = ;    //C24 PWM_L, GPIO , Pin
+    Coils[C24].gpio_dir = ;      //C24 Dir, GPIO , Pin
+}
+
+/*
+ * Initialization functions for the GPIO pins for the coils
+ */
+
+void Coil_Gpio_Init(current *Coils){
+    int i;
+    uint32_t GPA_init = 0;  //Init variable for GPIO A Registers
+    uint32_t GPB_init = 0;  //Init variable for GPIO B Registers
+    uint32_t GPC_init = 0;  //Init variable for GPIO C Registers
+    uint32_t GPD_init = 0;  //Init variable for GPIO D Registers
+    uint32_t GPE_init = 0;  //Init variable for GPIO E Registers
+    uint32_t GPF_init = 0;  //Init variable for GPIO F Registers
+    for(i = 0; i < coil_count; i++){
+        //Switch for PWM_H Pin
+        switch((Gpio_regs)((Coils[i].gpio_pwm_h >> 5) & 0x0007)){
+            case Gpio_A:
+                GPA_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_B:
+                GPB_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_C:
+                GPC_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_D:
+                GPD_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_E:
+                GPE_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_F:
+                GPF_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+        }
+        //Switch for PWM_L Pin
+        switch((Gpio_regs)((Coils[i].gpio_pwm_l >> 5) & 0x0007)){
+            case Gpio_A:
+                GPA_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_B:
+                GPB_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_C:
+                GPC_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_D:
+                GPD_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_E:
+                GPE_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_F:
+                GPF_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+        }
+        //Switch for Dir Pin
+        switch((Gpio_regs)((Coils[i].gpio_dir >> 5) & 0x0007)){
+            case Gpio_A:
+                GPA_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_B:
+                GPB_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_C:
+                GPC_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_D:
+                GPD_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_E:
+                GPE_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+            case Gpio_F:
+                GPF_init |= (uint32_t)1 << (Coils[i].gpio_pwm_h & 0x001F);
+                break;
+        }
+        //EALLOW;
+        //Set the Direction on each of the PWM_H, PWM_L and Dir pins
+        GpioCtrlRegs.GPADIR.all |= GPA_init;     //Sets the selected GPIO A pins to output
+        GpioCtrlRegs.GPBDIR.all |= GPB_init;     //Sets the selected GPIO B pins to output
+        GpioCtrlRegs.GPCDIR.all |= GPC_init;     //Sets the selected GPIO C pins to output
+        GpioCtrlRegs.GPDDIR.all |= GPD_init;     //Sets the selected GPIO D pins to output
+        GpioCtrlRegs.GPEDIR.all |= GPE_init;     //Sets the selected GPIO E pins to output
+        GpioCtrlRegs.GPFDIR.all |= GPF_init;     //Sets the selected GPIO F pins to output
+
+        //Sets the Output low on each of th PWM_H, PWM_L and Dir pins
+        GpioDataRegs.GPACLEAR.all = GPA_init;     //Sets the selected GPIO A pins low
+        GpioDataRegs.GPBCLEAR.all = GPB_init;     //Sets the selected GPIO B pins low
+        GpioDataRegs.GPCCLEAR.all = GPC_init;     //Sets the selected GPIO C pins low
+        GpioDataRegs.GPDCLEAR.all = GPD_init;     //Sets the selected GPIO D pins low
+        GpioDataRegs.GPECLEAR.all = GPE_init;     //Sets the selected GPIO E pins low
+        GpioDataRegs.GPFCLEAR.all = GPF_init;     //Sets the selected GPIO F pins low
+        //EDIS;
     }
 }
 
