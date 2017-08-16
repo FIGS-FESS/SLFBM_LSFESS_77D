@@ -746,6 +746,26 @@ void Position_PID_Cntrl(position *sensor){
     sensor->prev_place = (prev_size - 1) & (sensor->prev_place + 1);    //Progresses the current location variable while using the bitwise math to limit and loop the variable
 }
 
+void Current_Calc_Bearing(Coil_Array[]){
+    X_wheel = x *cos(Rotor_read) - Y * sin(Rotor_read);
+    Y_wheel = Y * cos(Rotor_read) - X * sin(Rotor_read);
+    proportion = Coil_loc + Rotor_read; //Do this in 18 bits
+    if(Quarter1){
+        if(Ramp_up){
+            Bearing_Current = 16 * proportion;
+        }
+        else{
+            if(Ramp_down){
+                Bearing_Current = 1 - (16 * proportion);
+            }
+            else{
+                Bearing_Current = 1;
+            }
+        }
+        Bearing_Current = Bias + (Bearing_Current * Q1Demand);
+    }
+}
+
 /*
  * Current Target Function
  */
