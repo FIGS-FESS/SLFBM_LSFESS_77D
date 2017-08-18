@@ -231,7 +231,10 @@ bool CRC_result = 0;
 int Data_count = 0;
 int CRC_count = 0;
 bool miso;
+float Rotation_reading;
+float Rotation_correct;
 float Rotation_percent;
+float Rotation_degrees;
 float Max_value = 0x3ffff;
 
 /*
@@ -436,30 +439,7 @@ void main(void){
             // Position_PID_Cntrl(&X2);    //PID control for X2 sensor
             // Position_PID_Cntrl(&Y2);    //PID control for Y2 sensor
             
-            current_target(&C1, &X1, &Y1);  //Displacement to Current target for coil 1
-            current_target(&C2, &X1, &Y1);  //Displacement to Current target for coil 2
-            current_target(&C3, &X1, &Y1);  //Displacement to Current target for coil 3
-            current_target(&C4, &X1, &Y1);  //Displacement to Current target for coil 4
-            current_target(&C5, &X1, &Y1);  //Displacement to Current target for coil 5
-            current_target(&C6, &X1, &Y1);  //Displacement to Current target for coil 6
-            current_target(&C7, &X1, &Y1);  //Displacement to Current target for coil 7
-            current_target(&C8, &X1, &Y1);  //Displacement to Current target for coil 8
-            current_target(&C9, &X1, &Y1);  //Displacement to Current target for coil 9
-            current_target(&C10, &X1, &Y1);  //Displacement to Current target for coil 10
-            current_target(&C11, &X1, &Y1);  //Displacement to Current target for coil 11
-            current_target(&C12, &X1, &Y1);  //Displacement to Current target for coil 12
-            current_target(&C13, &X1, &Y1);  //Displacement to Current target for coil 13
-            current_target(&C14, &X1, &Y1);  //Displacement to Current target for coil 14
-            current_target(&C15, &X1, &Y1);  //Displacement to Current target for coil 15
-            current_target(&C16, &X1, &Y1);  //Displacement to Current target for coil 16
-            current_target(&C17, &X1, &Y1);  //Displacement to Current target for coil 17
-            current_target(&C18, &X1, &Y1);  //Displacement to Current target for coil 18
-            current_target(&C19, &X1, &Y1);  //Displacement to Current target for coil 19
-            current_target(&C20, &X1, &Y1);  //Displacement to Current target for coil 20
-            current_target(&C21, &X1, &Y1);  //Displacement to Current target for coil 21
-            current_target(&C22, &X1, &Y1);  //Displacement to Current target for coil 22
-            current_target(&C23, &X1, &Y1);  //Displacement to Current target for coil 23
-            current_target(&C24, &X1, &Y1);  //Displacement to Current target for coil 24
+            Current_Calc_Bearing(Coils) //Displacement to Current target for coil 24
                         
             Bang_Bang_Cntrl(&C1);   //Current control function for coil 1
             Bang_Bang_Cntrl(&C2);   //Current control function for coil 2
@@ -746,23 +726,80 @@ void Position_PID_Cntrl(position *sensor){
     sensor->prev_place = (prev_size - 1) & (sensor->prev_place + 1);    //Progresses the current location variable while using the bitwise math to limit and loop the variable
 }
 
-void Current_Calc_Bearing(Coil_Array[]){
-    X_wheel = x *cos(Rotor_read) - Y * sin(Rotor_read);
-    Y_wheel = Y * cos(Rotor_read) - X * sin(Rotor_read);
-    proportion = Coil_loc + Rotor_read; //Do this in 18 bits
-    if(Quarter1){
-        if(Ramp_up){
-            Bearing_Current = 16 * proportion;
-        }
-        else{
-            if(Ramp_down){
-                Bearing_Current = 1 - (16 * proportion);
+/*
+ * Lower Bearing Current demand calculations
+ */
+
+void Current_Calc_Bearing(current Coil_Array[], position X, position Y){
+    float X_wheel = disp_to_current * ((X->pid_out * __cospuf32(1 - Rotation_percent) + (Y->pid_out * __sinpuf32(1 - Rotation_percent));
+    float Y_wheel = disp_to_current * ((Y->pid_out * __cospuf32(1 - Rotation_percent) - (X->pid_out * __sinpuf32(1 - Rotation_percent));
+    int proportion;
+    float Bearing_Current
+    int i = 0;
+    for(i = 0;i<coil_count;i++){
+        uint32_t current_location = (Rotation_correct + Coil_Array[i]->location) & 0x0003ffff;
+        switch((current_location >> 16) & 0x0003){
+        case 0:
+            if(((current_location >> 14) & 0x0003) == 0){
+                Bearing_Current = __divf32(current_location,0x00003FFF);
             }
             else{
-                Bearing_Current = 1;
+                if(((current_location >> 14) & 0x0003) == 3){
+                    Bearing_Current = 1 - (__divf32(current_location,0x00003FFF));
+                }
+                else{
+                    Bearing_Current = 1;
+                }
             }
+            Coil_Array[i]->bearing_cpos = Bias + (Bearing_Current * Y_wheel);
+            Coil_Array[Coil_Array[i]->neighbor_coil]->bearing_cneg = Bearing_Current;
+            break;
+        case 1:
+            if(((current_location >> 14) & 0x0003) == 0){
+                Bearing_Current = __divf32(current_location,0x00003FFF);
+            }
+            else{
+                if(Ramp_down){
+                    Bearing_Current = 1 - (__divf32(current_location,0x00003FFF));
+                }
+                else{
+                    Bearing_Current = 1;
+                }
+            }
+            Coil_Array[i]->bearing_cpos = -(Bias + (Bearing_Current * X_wheel));
+            Coil_Array[Coil_Array[i]->neighbor_coil]->bearing_cneg = Bearing_Current;
+            break;
+        case 2:
+            if(((current_location >> 14) & 0x0003) == 0){
+                Bearing_Current = __divf32(current_location,0x00003FFF);
+            }
+            else{
+                if(((current_location >> 14) & 0x0003) == 3){
+                    Bearing_Current = 1 - (__divf32(current_location,0x00003FFF));
+                }
+                else{
+                    Bearing_Current = 1;
+                }
+            }
+            Coil_Array[i]->bearing_cpos = Bias + (Bearing_Current * (-Y_wheel));
+            Coil_Array[Coil_Array[i]->neighbor_coil]->bearing_cneg = Bearing_Current;
+            break;
+        case 3:
+            if(((current_location >> 14) & 0x0003) == 0){
+                Bearing_Current = __divf32(current_location,0x00003FFF);
+            }
+            else{
+                if(Ramp_down){
+                    Bearing_Current = 1 - (__divf32(current_location,0x00003FFF));
+                }
+                else{
+                    Bearing_Current = 1;
+                }
+            }
+            Coil_Array[i]->bearing_cpos = -(Bias + (Bearing_Current * (-X_wheel)));
+            Coil_Array[Coil_Array[i]->neighbor_coil]->bearing_cneg = Bearing_Current;
+            break;
         }
-        Bearing_Current = Bias + (Bearing_Current * Q1Demand);
     }
 }
 
@@ -1309,8 +1346,10 @@ interrupt void epwm3_isr(){
                 {
                     Data_value = 0x4000;
                 }
-                Rotation_percent = __divf32(Data_value,Max_value);
-                Rotation_percent = Rotation_percent * 360;
+                Rotation_reading = Data_value;
+                Rotation_correct = (Rotation_reading + offset) & 0x0003ffff;
+                Rotation_percent = __divf32(Rotation_correct,Max_value);
+                Rotation_degrees = Rotation_percent * 360;
             }
             break;
         case Ignore_state:
