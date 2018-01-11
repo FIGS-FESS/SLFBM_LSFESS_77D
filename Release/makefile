@@ -22,10 +22,8 @@ ORDERED_OBJS += \
 "./F2837xD_SysCtrl.obj" \
 "./F2837xD_usDelay.obj" \
 "./main.obj" \
+"../2837x_FLASH_lnk_cpu1.cmd" \
 $(GEN_CMDS__FLAG) \
--l"C:/ti/controlSUITE/device_support/F2837xD/v210/F2837xD_common/cmd/2837xD_RAM_lnk_cpu1.cmd" \
--l"C:/ti/controlSUITE/device_support/F2837xD/v210/F2837xD_headers/cmd/F2837xD_Headers_nonBIOS_cpu1.cmd" \
--l"C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.3.LTS/lib/rts2800_fpu32.lib" \
 -llibc.a \
 
 -include ../makefile.init
@@ -146,14 +144,14 @@ BIN_OUTPUTS__QUOTED += \
 
 
 # All Target
-all: $(OBJS) $(GEN_CMDS)
+all: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@$(MAKE) --no-print-directory -Onone "SLFBM_LSFESS_77D.out"
 
 # Tool invocations
-SLFBM_LSFESS_77D.out: $(OBJS) $(GEN_CMDS)
+SLFBM_LSFESS_77D.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: C2000 Linker'
-	"C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.3.LTS/bin/cl2000" -v28 -ml -mt --cla_support=cla1 --float_support=fpu32 --tmu_support=tmu0 --vcu_support=vcu2 -Ooff --opt_for_speed=2 --advice:performance=all --define=CPU1 -g --diag_warning=225 --diag_wrap=off --display_error_number -z -m"SLFBM_LSFESS_77D.map" --stack_size=0x200 --warn_sections -i"C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.3.LTS/lib" -i"C:/ti/controlSUITE/device_support/F2837xD/v210/F2837xD_common/cmd" -i"C:/ti/controlSUITE/device_support/F2837xD/v210/F2837xD_headers/cmd" -i"C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.3.LTS/include" --reread_libs --diag_wrap=off --display_error_number --xml_link_info="SLFBM_LSFESS_77D_linkInfo.xml" --entry_point=code_start --rom_model -o "SLFBM_LSFESS_77D.out" $(ORDERED_OBJS)
+	"C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.3.LTS/bin/cl2000" -v28 -ml -mt --cla_support=cla1 --float_support=fpu32 --tmu_support=tmu0 --vcu_support=vcu2 -O2 --diag_warning=225 --diag_wrap=off --display_error_number -z -m"SLFBM_LSFESS_77D.map" --stack_size=0x200 --warn_sections -i"C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.3.LTS/lib" -i"C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.3.LTS/include" --reread_libs --diag_wrap=off --display_error_number --xml_link_info="SLFBM_LSFESS_77D_linkInfo.xml" --rom_model -o "SLFBM_LSFESS_77D.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

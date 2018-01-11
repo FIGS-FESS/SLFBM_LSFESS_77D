@@ -5,3 +5,4 @@
 *.out
 *.map
 *.xml
+Debug/ccsObjs.opt
