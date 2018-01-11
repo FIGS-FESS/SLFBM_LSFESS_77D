@@ -273,21 +273,21 @@ void main(void){
     //Setup output pins
     EALLOW;
     
-    //Pin 89, Used to clock how long the displacement if statement in the main loop takes
-    GpioCtrlRegs.GPBPUD.bit.GPIO40 = 0;     //Leaves pull up resistor on pin
-    GpioDataRegs.GPBSET.bit.GPIO40 = 1;     //Sets the pin high
-    GpioCtrlRegs.GPBGMUX1.bit.GPIO40 = 0;   //Sets the pins to default mux
-    GpioCtrlRegs.GPBDIR.bit.GPIO40 = 1;     //Sets the pin to output
-    GpioDataRegs.GPBCLEAR.bit.GPIO40 = 1;   //Sets the pin low
+//    //Pin 89, Used to clock how long the displacement if statement in the main loop takes
+//    GpioCtrlRegs.GPBPUD.bit.GPIO40 = 0;     //Leaves pull up resistor on pin
+//    GpioDataRegs.GPBSET.bit.GPIO40 = 1;     //Sets the pin high
+//    GpioCtrlRegs.GPBGMUX1.bit.GPIO40 = 0;   //Sets the pins to default mux
+//    GpioCtrlRegs.GPBDIR.bit.GPIO40 = 1;     //Sets the pin to output
+//    GpioDataRegs.GPBCLEAR.bit.GPIO40 = 1;   //Sets the pin low
 
     //MISO Pin for Rotational Encoder
-    GpioCtrlRegs.GPBPUD.bit.GPIO41 = 0;
-    GpioCtrlRegs.GPBGMUX1.bit.GPIO41 = 0;
-    GpioCtrlRegs.GPBDIR.bit.GPIO41 = 0;
+    GpioCtrlRegs.GPAPUD.bit.GPIO9 = 0;
+    GpioCtrlRegs.GPAGMUX1.bit.GPIO9 = 0;
+    GpioCtrlRegs.GPADIR.bit.GPIO9 = 0;
 
-    //Current State Output Pins
-    GpioCtrlRegs.GPBDIR.all = (uint32_t)0x7 << 16;    //GPIO 48,49 and 50
-    GpioDataRegs.GPACLEAR.all = (uint32_t)0x7 << 16;
+//    //Current State Output Pins
+//    GpioCtrlRegs.GPADIR.all = (uint32_t)0x7 << 16;    //GPIO 48,49 and 50
+//    GpioDataRegs.GPACLEAR.all = (uint32_t)0x7 << 16;
 
     //Sets the PWM_H, PWM_L and Dir GPIO values
         /* This is where one would go to see/change the pinouts on the board */
@@ -592,7 +592,7 @@ void Coil_Gpio_Init(current *Coils,uint32_t *gpio_mask){
         GpioCtrlRegs.GPEDIR.all |= gpio_mask[Gpio_E];     //Sets the selected GPIO E pins to output
         GpioCtrlRegs.GPFDIR.all |= gpio_mask[Gpio_F];     //Sets the selected GPIO F pins to output
 
-        //Sets the Output low on each of th PWM_H, PWM_L and Dir pins
+        //Sets the Output low on each of the PWM_H, PWM_L and Dir pins
         GpioDataRegs.GPACLEAR.all = gpio_mask[Gpio_A];     //Sets the selected GPIO A pins low
         GpioDataRegs.GPBCLEAR.all = gpio_mask[Gpio_B];     //Sets the selected GPIO B pins low
         GpioDataRegs.GPCCLEAR.all = gpio_mask[Gpio_C];     //Sets the selected GPIO C pins low
@@ -1246,12 +1246,12 @@ interrupt void adca1_isr(){
 
 
     //Write the sample to the global variable
-    c_samples[C9] = AdcaResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 9
-    c_samples[C10] = AdcaResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 10
-    c_samples[C11] = AdcaResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 11
-    c_samples[C12] = AdcaResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 12
-    c_samples[C17] = AdcaResultRegs.ADCRESULT4;  //Reads the result register of SOC3 for coil 17
-    c_samples[C18] = AdcaResultRegs.ADCRESULT5;  //Reads the result register of SOC3 for coil 18
+    c_samples[C5] = AdcaResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 5
+    c_samples[C6] = AdcaResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 6
+    c_samples[C7] = AdcaResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 7
+    c_samples[C8] = AdcaResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 8
+    c_samples[C21] = AdcaResultRegs.ADCRESULT4;  //Reads the result register of SOC3 for coil 21
+    c_samples[C22] = AdcaResultRegs.ADCRESULT5;  //Reads the result register of SOC3 for coil 22
     
     //Set the update flag
     ADCA_update = 1;  //Triggers the if statement in the main loop for Current Control
@@ -1269,12 +1269,12 @@ interrupt void adca1_isr(){
 
 interrupt void adcb2_isr(){
     //Write the sample to the global variable
-    c_samples[C1] = AdcbResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 1
-    c_samples[C2] = AdcbResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 2
-    c_samples[C3] = AdcbResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 3
-    c_samples[C4] = AdcbResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 4
-    c_samples[C21] = AdcbResultRegs.ADCRESULT4;  //Reads the result register of SOC4 for coil 21
-    c_samples[C22] = AdcbResultRegs.ADCRESULT5;  //Reads the result register of SOC5 for coil 22
+    /*c_samples[C13]*/ x1_sample = AdcbResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 13
+    c_samples[C14] = AdcbResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 14
+    c_samples[C15] = AdcbResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 15
+    c_samples[C16] = AdcbResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 16
+    c_samples[C17] = AdcbResultRegs.ADCRESULT4;  //Reads the result register of SOC4 for coil 17
+    c_samples[C18] = AdcbResultRegs.ADCRESULT5;  //Reads the result register of SOC5 for coil 18
 
     //Set the update flag
     ADCB_update = 1;  //Triggers the if statement in the main loop for PID operations
@@ -1295,12 +1295,12 @@ interrupt void adcb2_isr(){
 
 interrupt void adcc1_isr(){
     //Write the sample to the global variable
-    c_samples[C19] = AdcbResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 19
-    c_samples[C20] = AdcbResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 20
-    c_samples[C13] = AdcbResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 13
-    c_samples[C14] = AdcbResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 14
-    c_samples[C15] = AdcbResultRegs.ADCRESULT4;  //Reads the result register of SOC4 for coil 15
-    c_samples[C16] = AdcbResultRegs.ADCRESULT5;  //Reads the result register of SOC5 for coil 16
+    c_samples[C23] = AdcbResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 23
+    c_samples[C24] = AdcbResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 24
+    c_samples[C1] = AdcbResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 1
+    c_samples[C2] = AdcbResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 2
+    c_samples[C3] = AdcbResultRegs.ADCRESULT4;  //Reads the result register of SOC4 for coil 3
+    c_samples[C4] = AdcbResultRegs.ADCRESULT5;  //Reads the result register of SOC5 for coil 4
 
     //Set the update flag
     ADCC_update = 1;  //Triggers the if statement in the main loop for PID operations
@@ -1321,12 +1321,12 @@ interrupt void adcc1_isr(){
 
 interrupt void adcd1_isr(){
     //Write the sample to the global variable
-    c_samples[C23] = AdcbResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 23
-    c_samples[C24] = AdcbResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 24
-    c_samples[C5] = AdcbResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 5
-    c_samples[C6] = AdcbResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 6
-    c_samples[C7] = AdcbResultRegs.ADCRESULT4;  //Reads the result register of SOC4 for coil 7
-    c_samples[C8] = AdcbResultRegs.ADCRESULT5;  //Reads the result register of SOC5 for coil 8
+    /*c_samples[C19]*/ y1_sample = AdcbResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 19
+    c_samples[C20] = AdcbResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 20
+    c_samples[C9] = AdcbResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 9
+    c_samples[C10] = AdcbResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 10
+    c_samples[C11] = AdcbResultRegs.ADCRESULT4;  //Reads the result register of SOC4 for coil 11
+    c_samples[C12] = AdcbResultRegs.ADCRESULT5;  //Reads the result register of SOC5 for coil 12
 
     //Set the update flag
     ADCD_update = 1;  //Triggers the if statement in the main loop for PID operations
