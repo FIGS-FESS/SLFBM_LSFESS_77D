@@ -38,13 +38,13 @@
 #define disp_offset = 0  //Conversion offset for displacement sensor *(Millieters)
 
 //Displacement sensor sample period
-#define x1_dt 0.1 //*(MilliSeconds)
+#define x1_dt 0.2 //*(MilliSeconds)
 
 //Displacement sensor target
 #define x1_target 1   //Target float level *(Millimeters)
 
 //PID constants
-#define kp_init .5 //Default to 1 for Initial tuning
+#define kp_init .1 //Default to 1 for Initial tuning
 #define ki_init 0  //Default to 0 for initial tuning
 #define kd_init 0  //Default to 0 for initial tuning
 
@@ -213,10 +213,10 @@ uint32_t gpio_mask[6];  //Init variable array for GPIO Register masks
 
 
 //Current sensor update flag
-int ADCA_update;  //Flag for new current sensor readings
-int ADCB_update;  //Flag for new current sensor readings
-int ADCC_update;  //Flag for new current sensor readings
-int ADCD_update;  //Flag for new current sensor readings
+int ADCA_update = 0;  //Flag for new current sensor readings
+int ADCB_update = 0;  //Flag for new current sensor readings
+int ADCC_update = 0;  //Flag for new current sensor readings
+int ADCD_update = 0;  //Flag for new current sensor readings
 
 //Maximum Current
 float current_max = 10;  //Max current for operation *(Amps)
@@ -273,12 +273,14 @@ void main(void){
     //Setup output pins
     EALLOW;
     
-//    //Pin 89, Used to clock how long the displacement if statement in the main loop takes
-//    GpioCtrlRegs.GPBPUD.bit.GPIO40 = 0;     //Leaves pull up resistor on pin
-//    GpioDataRegs.GPBSET.bit.GPIO40 = 1;     //Sets the pin high
-//    GpioCtrlRegs.GPBGMUX1.bit.GPIO40 = 0;   //Sets the pins to default mux
-//    GpioCtrlRegs.GPBDIR.bit.GPIO40 = 1;     //Sets the pin to output
-//    GpioDataRegs.GPBCLEAR.bit.GPIO40 = 1;   //Sets the pin low
+
+    //Pin 89, Used to clock how long the displacement if statement in the main loop takes
+    GpioCtrlRegs.GPAPUD.bit.GPIO8 = 0;     //Leaves pull up resistor on pin
+    GpioDataRegs.GPASET.bit.GPIO8 = 1;     //Sets the pin high
+    GpioCtrlRegs.GPAGMUX1.bit.GPIO8 = 0;   //Sets the pins to default mux
+    GpioCtrlRegs.GPADIR.bit.GPIO8 = 1;     //Sets the pin to output
+    GpioDataRegs.GPACLEAR.bit.GPIO8 = 1;   //Sets the pin low
+
 
     //MISO Pin for Rotational Encoder
     GpioCtrlRegs.GPAPUD.bit.GPIO9 = 0;
@@ -393,9 +395,13 @@ void main(void){
 
         //If statement to facilitate the PID calculations,
             //*Figure out if the current control should still be here
-        if(x1_update){
+        if(ADCA_update&&ADCB_update&&ADCC_update&&ADCD_update/*x1_update*/){
             x1_update = 0 ;
-            GpioDataRegs.GPBTOGGLE.bit.GPIO40 = 1;  //Used to clock how long this if statement takes
+            ADCA_update = 0;
+            ADCB_update = 0;
+            ADCC_update = 0;
+            ADCD_update = 0;
+            GpioDataRegs.GPATOGGLE.bit.GPIO8 = 1;  //Used to clock how long this if statement takes
             Position_PID_Cntrl(&X1);    //PID control for X1 sensor
             Position_PID_Cntrl(&Y1);    //PID control for Y1 sensor
             // Position_PID_Cntrl(&X2);    //PID control for X2 sensor
@@ -429,7 +435,7 @@ void main(void){
 //            Bang_Bang_Cntrl(&C24);   //Current control function for coil 24
             Bang_Bang_Cntrl(Coils);    //Current control function for the coils
 
-            GpioDataRegs.GPBTOGGLE.bit.GPIO40 = 1;  //*OLD* Takes 1.0226 micro seconds
+            GpioDataRegs.GPATOGGLE.bit.GPIO8 = 1;  //*OLD* Takes 1.0226 micro seconds
         }
     }
 }
@@ -442,27 +448,27 @@ void Coil_Pin_Assignments(current *Coils){
     Coils[C1].gpio_pwm_h = 82;      //C1 PWM_H, GPIO , Pin
     Coils[C1].gpio_pwm_l = 84;      //C1 PWM_L, GPIO , Pin
     Coils[C1].gpio_dir = 86;        //C1 Dir, GPIO , Pin
-    Coils[C2].gpio_pwm_h = 80;      //C2 PWM_H, GPIO , Pin
+    Coils[C2].gpio_pwm_h = 76;      //C2 PWM_H, GPIO , Pin
     Coils[C2].gpio_pwm_l = 78;      //C2 PWM_L, GPIO , Pin
-    Coils[C2].gpio_dir = 76;        //C2 Dir, GPIO , Pin
-    Coils[C3].gpio_pwm_h = 74;      //C3 PWM_H, GPIO , Pin
+    Coils[C2].gpio_dir = 80;        //C2 Dir, GPIO , Pin
+    Coils[C3].gpio_pwm_h = 70;      //C3 PWM_H, GPIO , Pin
     Coils[C3].gpio_pwm_l = 72;      //C3 PWM_L, GPIO , Pin
-    Coils[C3].gpio_dir = 70;        //C3 Dir, GPIO , Pin
-    Coils[C4].gpio_pwm_h = 68;      //C4 PWM_H, GPIO , Pin
+    Coils[C3].gpio_dir = 74;        //C3 Dir, GPIO , Pin
+    Coils[C4].gpio_pwm_h = 64;      //C4 PWM_H, GPIO , Pin
     Coils[C4].gpio_pwm_l = 66;      //C4 PWM_L, GPIO , Pin
-    Coils[C4].gpio_dir = 64;        //C4 Dir, GPIO , Pin
-    Coils[C5].gpio_pwm_h = 33;      //C5 PWM_H, GPIO , Pin
+    Coils[C4].gpio_dir = 68;        //C4 Dir, GPIO , Pin
+    Coils[C5].gpio_pwm_h = 27;      //C5 PWM_H, GPIO , Pin
     Coils[C5].gpio_pwm_l = 32;      //C5 PWM_L, GPIO , Pin
-    Coils[C5].gpio_dir = 27;        //C5 Dir, GPIO , Pin
-    Coils[C6].gpio_pwm_h = 26;      //C6 PWM_H, GPIO , Pin
+    Coils[C5].gpio_dir = 33;        //C5 Dir, GPIO , Pin
+    Coils[C6].gpio_pwm_h = 24;      //C6 PWM_H, GPIO , Pin
     Coils[C6].gpio_pwm_l = 25;      //C6 PWM_L, GPIO , Pin
-    Coils[C6].gpio_dir = 24;        //C6 Dir, GPIO , Pin
-    Coils[C7].gpio_pwm_h = 19;      //C7 PWM_H, GPIO , Pin
+    Coils[C6].gpio_dir = 26;        //C6 Dir, GPIO , Pin
+    Coils[C7].gpio_pwm_h = 17;      //C7 PWM_H, GPIO , Pin
     Coils[C7].gpio_pwm_l = 18;      //C7 PWM_L, GPIO , Pin
-    Coils[C7].gpio_dir = 17;        //C7 Dir, GPIO , Pin
-    Coils[C8].gpio_pwm_h = 16;      //C8 PWM_H, GPIO , Pin
+    Coils[C7].gpio_dir = 19;        //C7 Dir, GPIO , Pin
+    Coils[C8].gpio_pwm_h = 10;      //C8 PWM_H, GPIO , Pin
     Coils[C8].gpio_pwm_l = 11;      //C8 PWM_L, GPIO , Pin
-    Coils[C8].gpio_dir = 10;        //C8 Dir, GPIO , Pin
+    Coils[C8].gpio_dir = 16;        //C8 Dir, GPIO , Pin
     Coils[C9].gpio_pwm_h = 77;      //C9 PWM_H, GPIO , Pin
     Coils[C9].gpio_pwm_l = 75;      //C9 PWM_L, GPIO , Pin
     Coils[C9].gpio_dir = 73;        //C9 Dir, GPIO , Pin
@@ -475,9 +481,9 @@ void Coil_Pin_Assignments(current *Coils){
     Coils[C12].gpio_pwm_h = 133;    //C12 PWM_H, GPIO , Pin
     Coils[C12].gpio_pwm_l = 93;     //C12 PWM_L, GPIO , Pin
     Coils[C12].gpio_dir = 91;       //C12 Dir, GPIO , Pin
-    Coils[C13].gpio_pwm_h = 22;     //C13 PWM_H, GPIO , Pin
-    Coils[C13].gpio_pwm_l = 21;     //C13 PWM_L, GPIO , Pin
-    Coils[C13].gpio_dir = 20;       //C13 Dir, GPIO , Pin
+    Coils[C13].gpio_pwm_h = 20;     //C13 PWM_H, GPIO , Pin
+    Coils[C13].gpio_pwm_l = 15;     //C13 PWM_L, GPIO , Pin
+    Coils[C13].gpio_dir = 14;       //C13 Dir, GPIO , Pin
     Coils[C14].gpio_pwm_h = 31;     //C14 PWM_H, GPIO , Pin
     Coils[C14].gpio_pwm_l = 30;     //C14 PWM_L, GPIO , Pin
     Coils[C14].gpio_dir = 23;       //C14 Dir, GPIO , Pin
@@ -641,6 +647,7 @@ void SetupCoil(current *coil){
 
 void Position_PID_Cntrl(position *sensor){
     //Read sample into structure
+    int temp_div;
     sensor->sample = (*(sensor->sample_loc) * sensor->scale) + sensor->offset;    //*(Meters)
 
     //Initial error calculation between target and sample values
@@ -654,7 +661,8 @@ void Position_PID_Cntrl(position *sensor){
     sensor->i = sensor->i + ((sensor->error - sensor->prev[sensor->prev_place]) * sensor->dt * sensor->ki);
 
     //Derivative term calculation
-    sensor->d = (sensor->error - sensor->prev[sensor->prev_last]) * sensor->kd / sensor->dt;    
+    temp_div = __divf32(sensor->kd,sensor->dt);
+    sensor->d = (sensor->error - sensor->prev[sensor->prev_last]) * temp_div;
 
     //PID output
     sensor->pid_out = sensor->p + sensor->i + sensor->d;    //*(mm?)
@@ -1018,10 +1026,10 @@ void InitADCPart2(){
 
     //Configuration Settings for ADCC
     AdccRegs.ADCSOC0CTL.bit.TRIGSEL = 5;    //Set the Trigger for SOC0, 5=ePWM2
-    AdccRegs.ADCSOC0CTL.bit.CHSEL = 0;      //Set the channel for SOC0 to convert, 0=ADCBIN0
+    AdccRegs.ADCSOC0CTL.bit.CHSEL = 14;      //Set the channel for SOC0 to convert, 0=ADCBIN0
     AdccRegs.ADCSOC0CTL.bit.ACQPS = 19;     //Set the sample window size for SOC0, 19=20 SysClkCycles
     AdccRegs.ADCSOC1CTL.bit.TRIGSEL = 5;    //Set the Trigger for SOC1, 5=ePWM2
-    AdccRegs.ADCSOC1CTL.bit.CHSEL = 1;      //Set the channel for SOC1 to convert, 1=ADCBIN1
+    AdccRegs.ADCSOC1CTL.bit.CHSEL = 15;      //Set the channel for SOC1 to convert, 1=ADCBIN1
     AdccRegs.ADCSOC1CTL.bit.ACQPS = 19;     //Set the sample window size for SOC1, 19=20 SysClkCycles
     AdccRegs.ADCSOC2CTL.bit.TRIGSEL = 5;    //Set the Trigger for SOC2, 5=ePWM2
     AdccRegs.ADCSOC2CTL.bit.CHSEL = 2;      //Set the channel for SOC2 to convert, 0=ADCBIN0
@@ -1091,7 +1099,7 @@ void InitEPwm(){
     EPwm1Regs.TBCTR = 0;    //Resets ePWM1 counter register
 
     //Set ePWM1 period
-    EPwm1Regs.TBPRD = 1249;     //Results in a period of 1/80 kHz
+    EPwm1Regs.TBPRD = 19999;     //Results in a period of 1/5 kHz
 
     //Disable ePWM1 phase sync
     EPwm1Regs.TBPHS.bit.TBPHS = 0;
@@ -1104,7 +1112,7 @@ void InitEPwm(){
     EPwm1Regs.ETPS.bit.SOCAPRD = 1;
 
     //Set the Compare A register
-    EPwm1Regs.CMPA.bit.CMPA = 625;      //Sets Compare A to a 50% duty cycle, arbitrary for now
+    EPwm1Regs.CMPA.bit.CMPA = 10000;      //Sets Compare A to a 50% duty cycle, arbitrary for now
 
     //Action qualifier control
     EPwm1Regs.AQCTLA.bit.CAU = 2;       //Action at A going up, 2=set_high
@@ -1122,7 +1130,7 @@ void InitEPwm(){
     EPwm2Regs.TBCTR = 0;    //Resets ePWM2 counter register
 
     //Set ePWM2 period
-    EPwm2Regs.TBPRD = 9999;     //Results in a period of 1/10 kHz 
+    EPwm2Regs.TBPRD = 19999;     //Results in a period of 1/5 kHz
 
     //Disable ePWM2 phase sync
     EPwm2Regs.TBPHS.bit.TBPHS = 0;
@@ -1135,7 +1143,7 @@ void InitEPwm(){
     EPwm2Regs.ETPS.bit.SOCBPRD = 1;
 
     //Set the Compare A register
-    EPwm2Regs.CMPA.bit.CMPA = 5000;     //Sets Compare A to a 50% duty cycle, arbitrary for now
+    EPwm2Regs.CMPA.bit.CMPA = 10000;     //Sets Compare A to a 50% duty cycle, arbitrary for now
 
     //Action qualifier control
     EPwm2Regs.AQCTLA.bit.CAU = 2;       //Action at A going up, 2=set_high
@@ -1249,10 +1257,11 @@ interrupt void adca1_isr(){
     c_samples[C5] = AdcaResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 5
     c_samples[C6] = AdcaResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 6
     c_samples[C7] = AdcaResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 7
+    c_samples[C19] = AdcaResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 19
     c_samples[C8] = AdcaResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 8
     c_samples[C21] = AdcaResultRegs.ADCRESULT4;  //Reads the result register of SOC3 for coil 21
     c_samples[C22] = AdcaResultRegs.ADCRESULT5;  //Reads the result register of SOC3 for coil 22
-    
+
     //Set the update flag
     ADCA_update = 1;  //Triggers the if statement in the main loop for Current Control
 
@@ -1295,12 +1304,13 @@ interrupt void adcb2_isr(){
 
 interrupt void adcc1_isr(){
     //Write the sample to the global variable
-    c_samples[C23] = AdcbResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 23
-    c_samples[C24] = AdcbResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 24
-    c_samples[C1] = AdcbResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 1
-    c_samples[C2] = AdcbResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 2
-    c_samples[C3] = AdcbResultRegs.ADCRESULT4;  //Reads the result register of SOC4 for coil 3
-    c_samples[C4] = AdcbResultRegs.ADCRESULT5;  //Reads the result register of SOC5 for coil 4
+    c_samples[C23] = AdccResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 23
+    c_samples[C24] = AdccResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 24
+    c_samples[C1] = AdccResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 1
+    c_samples[C13] = AdccResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 13
+    c_samples[C2] = AdccResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 2
+    c_samples[C3] = AdccResultRegs.ADCRESULT4;  //Reads the result register of SOC4 for coil 3
+    c_samples[C4] = AdccResultRegs.ADCRESULT5;  //Reads the result register of SOC5 for coil 4
 
     //Set the update flag
     ADCC_update = 1;  //Triggers the if statement in the main loop for PID operations
@@ -1321,12 +1331,12 @@ interrupt void adcc1_isr(){
 
 interrupt void adcd1_isr(){
     //Write the sample to the global variable
-    /*c_samples[C19]*/ y1_sample = AdcbResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 19
-    c_samples[C20] = AdcbResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 20
-    c_samples[C9] = AdcbResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 9
-    c_samples[C10] = AdcbResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 10
-    c_samples[C11] = AdcbResultRegs.ADCRESULT4;  //Reads the result register of SOC4 for coil 11
-    c_samples[C12] = AdcbResultRegs.ADCRESULT5;  //Reads the result register of SOC5 for coil 12
+    /*c_samples[C19]*/ y1_sample = AdcdResultRegs.ADCRESULT0;  //Reads the result register of SOC0 for coil 19
+    c_samples[C20] = AdcdResultRegs.ADCRESULT1;  //Reads the result register of SOC1 for coil 20
+    c_samples[C9] = AdcdResultRegs.ADCRESULT2;  //Reads the result register of SOC2 for coil 9
+    c_samples[C10] = AdcdResultRegs.ADCRESULT3;  //Reads the result register of SOC3 for coil 10
+    c_samples[C11] = AdcdResultRegs.ADCRESULT4;  //Reads the result register of SOC4 for coil 11
+    c_samples[C12] = AdcdResultRegs.ADCRESULT5;  //Reads the result register of SOC5 for coil 12
 
     //Set the update flag
     ADCD_update = 1;  //Triggers the if statement in the main loop for PID operations
@@ -1343,16 +1353,18 @@ interrupt void adcd1_isr(){
 
 /*
  * ePWM3 ISR
+ * Note: FSM for the BISS comunication with the optical encoder. GPIO9 is the MISO pin and GPIO4 is CLK.
  */
+
 
 interrupt void epwm3_isr(){
     //Progress the state to the next state
     c_state = n_state;
 
-    GpioDataRegs.GPBTOGGLE.all = (uint32_t)c_state << 16;
+    //GpioDataRegs.GPBTOGGLE.all = (uint32_t)c_state << 16;
 
     //Read the miso pin
-    miso = GpioDataRegs.GPBDAT.bit.GPIO41;
+    miso = GpioDataRegs.GPADAT.bit.GPIO9;
 
     switch(c_state){
         case Idle_state:
