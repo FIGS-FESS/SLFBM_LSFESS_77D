@@ -253,7 +253,7 @@ int Data_count = 0;
 int CRC_count = 0;
 bool miso;
 uint32_t Rotation_reading;
-uint32_t Hw_offset;
+uint32_t Hw_offset = 128650;
 float Rotation_correct;
 float Rotation_percent;
 float Rotation_degrees;
@@ -314,8 +314,8 @@ void main(void){
     Y1.sample_loc = &y1_sample;
 
     //Sets the target for X1 and Y1
-    X1.target = 1.6;
-    Y1.target = 1.5;
+    X1.target = .9728;
+    Y1.target = 1.18;
 
     //Sets the correct offset and scaling factor for each displacement sensor
     X1.scale = 0.00076433121;
@@ -710,6 +710,7 @@ void Bearing_Current_Target(current *Coils, position *X, position *Y){
     int coil_offset = (int)(theta_percent * 24);    //Finite coil location offset
     int i = 0;  //Iteration Variable for the loop
     int temp_coil;  //Holder for theoretical coil location
+    float temp_target;
     int Coil_demand_gain = 1;   //Gain for all of the coil bearing demands
     for(i = 0;i < coil_count; i++){ //Loop through all 24 coils
 
@@ -717,7 +718,14 @@ void Bearing_Current_Target(current *Coils, position *X, position *Y){
         temp_coil = (i + coil_offset) % coil_count; //Circular offset calculation
 
         //Multiply the influences by the respective PID outputs to determine current target
-        Coils[i].target = Coil_demand_gain * ((X_wheel_demand * (map_array[0][temp_coil])) + (Y_wheel_demand * (map_array[1][temp_coil])));
+        temp_target = Coil_demand_gain * ((X_wheel_demand * (map_array[0][temp_coil])) + (Y_wheel_demand * (map_array[1][temp_coil])));
+        if(temp_target > current_max){
+            temp_target = current_max;
+        }
+        if(temp_target<(-current_max)){
+            temp_target = -current_max;
+        }
+        Coils[i].target = temp_target;
     }
 }
 
@@ -1427,12 +1435,14 @@ interrupt void epwm3_isr(){
                 }
                 else
                 {
-                    Data_value = 0x4000;
+                    Data_value = 0x40000;
                 }
                 Rotation_reading = Data_value;
-                Rotation_correct = (Rotation_reading + Hw_offset) & 0x0003ffff;
-                Rotation_percent = __divf32(Rotation_correct,Max_value);
-                Rotation_degrees = Rotation_percent * 360;
+                if(Rotation_reading<0x40000){
+                    Rotation_correct = (Rotation_reading + Hw_offset) & 0x0003ffff;
+                    Rotation_percent = __divf32(Rotation_correct,Max_value);
+                    Rotation_degrees = Rotation_percent * 360;
+                }
             }
             break;
         case Ignore_state:
