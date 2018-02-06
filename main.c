@@ -35,7 +35,7 @@
 #define disp_scale = .9540446743 * 3.3 / 4096   //Conversion scale for displacement sensor *(Millimeters/Volt)
 
 //Displacement sensor conversion offset
-#define disp_offset = 0  //Conversion offset for displacement sensor *(Millieters)
+#define disp_offset = 0  //Conversion offset for displacement sensor *(Millimeters)
 
 //Displacement sensor sample period
 #define x1_dt 0.2 //*(MilliSeconds)
@@ -725,6 +725,9 @@ void Bearing_Current_Target(current *Coils, position *X, position *Y){
         if(temp_target<(-current_max)){
             temp_target = -current_max;
         }
+        if((Coils[i].sample > current_max)||(Coils[i].sample < -(current_max))){
+            temp_target = 0;
+        }
         Coils[i].target = temp_target;
     }
 }
@@ -822,7 +825,7 @@ void Bang_Bang_Cntrl(current *Coils){
     uint32_t GPE_temp;
     uint32_t GPF_temp;
     int i;
-    for(i = 0; i < coil_count; i++){    
+    for(i = 0; i < coil_count; i++){
         //Conversion of ADC current reading into Amps
         Coils[i].sample = (*(Coils[i].sample_loc) * Coils[i].scale) + Coils[i].offset;  //*(Amps)
             /* Add in the rotation demands in the line below */
@@ -837,8 +840,8 @@ void Bang_Bang_Cntrl(current *Coils){
             temp_pwm_h = 1;
         }
         if(Coils[i].error > 0){
-            temp_dir = 1;
-            temp_pwm_h = 1;
+            temp_dir = 0;
+            temp_pwm_h = 0;
         }
         else{
             temp_pwm_h = 0;
